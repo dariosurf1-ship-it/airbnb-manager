@@ -191,3 +191,46 @@ export async function deleteBooking(bookingId) {
   if (error) throw error;
   return true;
 }
+/**
+ * MEMBERSHIPS management
+ * - list members for a property
+ * - add/remove members
+ */
+
+export async function fetchMembers(propertyId) {
+  if (!propertyId) return [];
+  const { data, error } = await supabase
+    .from("memberships")
+    .select("user_id, role, created_at")
+    .eq("property_id", propertyId)
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function addMember(propertyId, userId, role) {
+  if (!propertyId) throw new Error("Missing propertyId");
+  if (!userId) throw new Error("Missing userId");
+
+  const { error } = await supabase
+    .from("memberships")
+    .insert([{ property_id: propertyId, user_id: userId, role }]);
+
+  if (error) throw error;
+  return true;
+}
+
+export async function removeMember(propertyId, userId) {
+  if (!propertyId) throw new Error("Missing propertyId");
+  if (!userId) throw new Error("Missing userId");
+
+  const { error } = await supabase
+    .from("memberships")
+    .delete()
+    .eq("property_id", propertyId)
+    .eq("user_id", userId);
+
+  if (error) throw error;
+  return true;
+}

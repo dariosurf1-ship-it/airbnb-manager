@@ -9,6 +9,7 @@ import Operativita from "./pages/Operativita";
 
 import Profilo from "./pages/Profilo";
 import Condivisione from "./pages/Condivisione";
+import Accessi from "./pages/Accessi";
 
 import { useCloud } from "./CloudProvider";
 import { signOut } from "./lib/cloud";
@@ -28,6 +29,8 @@ function TopBar() {
 
   if (!session) return null;
 
+  const is = (p) => loc.pathname === p;
+
   return (
     <div style={topBar}>
       <div style={{ opacity: 0.75, fontSize: 12 }}>
@@ -35,19 +38,15 @@ function TopBar() {
       </div>
 
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <Button
-          variant="secondary"
-          onClick={() => nav("/profilo")}
-          style={loc.pathname === "/profilo" ? activeBtn : null}
-        >
+        <Button variant="secondary" onClick={() => nav("/profilo")} style={is("/profilo") ? activeBtn : null}>
           Profilo
         </Button>
 
-        <Button
-          variant="secondary"
-          onClick={() => nav("/condivisione")}
-          style={loc.pathname === "/condivisione" ? activeBtn : null}
-        >
+        <Button variant="secondary" onClick={() => nav("/accessi")} style={is("/accessi") ? activeBtn : null}>
+          Accessi
+        </Button>
+
+        <Button variant="secondary" onClick={() => nav("/condivisione")} style={is("/condivisione") ? activeBtn : null}>
           Condivisione
         </Button>
 
@@ -87,6 +86,7 @@ export default function App() {
               <Route path="/operativita" element={<Protected><Operativita /></Protected>} />
 
               <Route path="/profilo" element={<Protected><Profilo /></Protected>} />
+              <Route path="/accessi" element={<Protected><Accessi /></Protected>} />
               <Route path="/condivisione" element={<Protected><Condivisione /></Protected>} />
             </Routes>
           </div>
