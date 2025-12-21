@@ -3,6 +3,36 @@ import { useNavigate } from "react-router-dom";
 import { signInWithPassword } from "../lib/cloud";
 import { Card, Button, Input, Banner } from "../ui";
 
+function friendlyAuthError(err) {
+  const msg = (err?.message || "").toLowerCase();
+
+  // Network / Supabase down / timeout
+  if (
+    msg.includes("failed to fetch") ||
+    msg.includes("fetch") ||
+    msg.includes("network") ||
+    msg.includes("timeout")
+  ) {
+    return "Supabase non raggiungibile (timeout o disservizio). Riprova tra qualche minuto.";
+  }
+
+  // Common Supabase auth messages
+  if (msg.includes("invalid login credentials")) {
+    return "Credenziali non valide: controlla email e password.";
+  }
+  if (msg.includes("email not confirmed")) {
+    return "Email non confermata. Controlla la casella di posta e conferma l’account.";
+  }
+  if (msg.includes("user not found")) {
+    return "Utente non trovato. Verifica l’email oppure crea l’utente in Supabase.";
+  }
+  if (msg.includes("too many requests")) {
+    return "Troppi tentativi. Aspetta qualche minuto e riprova.";
+  }
+
+  return err?.message || "Login fallito.";
+}
+
 export default function Login() {
   const nav = useNavigate();
 
@@ -15,11 +45,12 @@ export default function Login() {
     e.preventDefault();
     setErr("");
     setLoading(true);
+
     try {
-      await signInWithPassword(email, password);
+      await signInWithPassword(email.trim(), password);
       nav("/", { replace: true });
     } catch (e2) {
-      setErr(e2?.message || "Login fallito.");
+      setErr(friendlyAuthError(e2));
     } finally {
       setLoading(false);
     }
@@ -34,6 +65,9 @@ export default function Login() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="tuo@email.it"
+            disabled={loading}
+            autoComplete="email"
+            autoFocus
           />
 
           <Input
@@ -42,11 +76,13 @@ export default function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
+            disabled={loading}
+            autoComplete="current-password"
           />
 
           {err ? <Banner variant="danger">{err}</Banner> : null}
 
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading || !email || !password}>
             {loading ? "Accesso..." : "Entra"}
           </Button>
 
