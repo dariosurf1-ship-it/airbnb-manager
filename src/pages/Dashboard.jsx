@@ -1,110 +1,122 @@
-import { useState } from "react";
-import PropertyHeader from "../components/PropertyHeader";
+import { useMemo } from "react";
 import { useCloud } from "../CloudProvider";
-import { updateProperty } from "../lib/cloud";
-import { Card, Button, Input, Textarea, Banner } from "../ui";
+
+function toDateOnly(d) {
+  // accetta stringhe ISO o Date
+  const dt = d instanceof Date ? d : new Date(d);
+  if (Number.isNaN(dt.getTime())) return null;
+  return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+}
+
+function isTodayBetween(checkIn, checkOut) {
+  const today = toDateOnly(new Date());
+  const ci = toDateOnly(checkIn);
+  const co = toDateOnly(checkOut);
+  if (!today || !ci || !co) return null;
+
+  // Occupato se today >= checkin e today < checkout
+  return today.getTime() >= ci.getTime() && today.getTime() < co.getTime();
+}
+
+function computeStatusForProperty(propertyId, bookings) {
+  // bookings attesi: [{ property_id, check_in, check_out, status }]
+  // se non c'è niente, status = unknown
+  if (!Array.isArray(bookings) || bookings.length === 0) return { key: "unknown", label: "—" };
+
+  const list = bookings.filter((b) => b.property_id === propertyId);
+  if (list.length === 0) return { key: "free", label: "🟢 Libero" };
+
+  // se trovi almeno una prenotazione oggi, è occupato
+  const occupied = list.some((b) => isTodayBetween(b.check_in, b.check_out));
+  if (occupied) return { key: "busy", label: "🔴 Occupato" };
+
+  return { key: "free", label: "🟢 Libero" };
+}
 
 export default function Dashboard() {
-  const { selectedProperty, selectedId, properties, setProperties } = useCloud();
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState("");
+  const { properties = [], selectedId, setSelectedId, bookings = [] } = useCloud();
 
-  if (!selectedProperty) {
-    return (
-      <Card title="Dashboard" subtitle="Nessun appartamento disponibile">
-        <Banner variant="warn">
-          Non vedo appartamenti. Se è il primo accesso, ricarica la pagina.
-        </Banner>
-      </Card>
-    );
-  }
-
-  const p = selectedProperty;
-
-  async function save(patch) {
-    setMsg("");
-    setSaving(true);
-    try {
-      const updated = await updateProperty(selectedId, patch);
-      // aggiorna in memoria
-      const next = properties.map((x) => (x.id === updated.id ? updated : x));
-      setProperties(next);
-      setMsg("Salvato ✅");
-    } catch (e) {
-      setMsg(e?.message || "Errore salvataggio");
-    } finally {
-      setSaving(false);
-    }
-  }
+  const cards = useMemo(() => {
+    return properties.map((p) => {
+      const st = computeStatusForProperty(p.id, bookings);
+      return { p, st };
+    });
+  }, [properties, bookings]);
 
   return (
-    <div style={{ display: "grid", gap: 14 }}>
-      <Card title="Dashboard" subtitle="Impostazioni appartamento (cloud)">
-        <PropertyHeader title="Dashboard" />
-        {msg ? <Banner variant={msg.includes("✅") ? "info" : "danger"}>{msg}</Banner> : null}
-      </Card>
+    <div style={{ display: "grid", gap: 16 }}>
+      <div>
+        <h2 style={{ margin: 0, fontSize: 22 }}>Dashboard</h2>
+        <div style={{ marginTop: 6, opacity: 0.8 }}>
+          Seleziona un appartamento dalla sidebar per lavorare nel contesto corretto.
+        </div>
+      </div>
 
-      <Card title="Impostazioni" subtitle="Questi dati entrano nei messaggi PIN e nella gestione">
-        <div style={{ display: "grid", gap: 12 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
-            <Input
-              label="Nome"
-              value={p.name || ""}
-              onChange={(e) => save({ name: e.target.value })}
-              disabled={saving}
-            />
-            <Input
-              label="Indirizzo"
-              value={p.address || ""}
-              onChange={(e) => save({ address: e.target.value })}
-              disabled={saving}
-            />
-            <Input
-              label="Wi-Fi (SSID)"
-              value={p.wifi_name || ""}
-              onChange={(e) => save({ wifi_name: e.target.value })}
-              disabled={saving}
-            />
-            <Input
-              label="Wi-Fi password"
-              value={p.wifi_password || ""}
-              onChange={(e) => save({ wifi_password: e.target.value })}
-              disabled={saving}
-            />
-            <Input
-              label="Check-in time"
-              value={p.check_in_time || ""}
-              onChange={(e) => save({ check_in_time: e.target.value })}
-              disabled={saving}
-            />
-            <Input
-              label="Check-out time"
-              value={p.check_out_time || ""}
-              onChange={(e) => save({ check_out_time: e.target.value })}
-              disabled={saving}
-            />
-            <Input
-              label="House manual URL"
-              value={p.house_manual_url || ""}
-              onChange={(e) => save({ house_manual_url: e.target.value })}
-              disabled={saving}
-            />
-          </div>
-
-          <Textarea
-            label="Note"
-            value={p.notes || ""}
-            onChange={(e) => save({ notes: e.target.value })}
-            disabled={saving}
-          />
-
-          <div style={{ display: "flex", gap: 10 }}>
-            <Button variant="secondary" disabled>
-              Salvataggio automatico attivo
-            </Button>
+      {properties.length === 0 ? (
+        <div className="panel">
+          <div style={{ opacity: 0.85 }}>
+            Nessun appartamento accessibile.
+            <br />
+            Se è il primo accesso, prova a ricaricare la pagina.
           </div>
         </div>
-      </Card>
+      ) : (
+        <div className="dashboard-grid">
+          {cards.map(({ p, st }) => {
+            const isActive = p.id === selectedId;
+
+            return (
+              <div
+                key={p.id}
+                className="property-card"
+                onClick={() => setSelectedId?.(p.id)}
+                role="button"
+                style={{
+                  cursor: "pointer",
+                  outline: isActive ? "1px solid rgba(37,99,235,0.35)" : "none",
+                }}
+                title="Clicca per selezionare"
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                  <h3 style={{ margin: 0 }}>{p.name}</h3>
+                  {isActive ? (
+                    <span className="status-pill turnover">⭐ Attivo</span>
+                  ) : (
+                    <span className="status-pill">Seleziona</span>
+                  )}
+                </div>
+
+                <div style={{ marginTop: 10 }}>
+                  <span className={`status-pill ${st.key === "busy" ? "busy" : st.key === "free" ? "free" : ""}`}>
+                    {st.label}
+                  </span>
+                </div>
+
+                <div className="small-muted">
+                  <div>
+                    <b>property_id:</b>{" "}
+                    <span style={{ fontFamily: "ui-monospace, Menlo, monospace" }}>
+                      {String(p.id).slice(0, 8)}…{String(p.id).slice(-6)}
+                    </span>
+                  </div>
+
+                  {p.check_in_time || p.check_out_time ? (
+                    <div style={{ marginTop: 6 }}>
+                      <b>Check-in:</b> {p.check_in_time || "—"} • <b>Check-out:</b> {p.check_out_time || "—"}
+                    </div>
+                  ) : null}
+
+                  {p.address ? (
+                    <div style={{ marginTop: 6 }}>
+                      <b>Indirizzo:</b> {p.address}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

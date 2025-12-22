@@ -1,18 +1,14 @@
-import "./styles.css";
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App.jsx";
-import { CloudProvider } from "./CloudProvider.jsx";
+import App from "./App";
+import { PropertyProvider } from "./context/PropertyContext";
+import "./index.css";
 
-// PWA
-import { registerSW } from "virtual:pwa-register";
-
-registerSW({ immediate: true });
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <CloudProvider>
+    <PropertyProvider>
       <App />
-    </CloudProvider>
+    </PropertyProvider>
   </React.StrictMode>
 );
