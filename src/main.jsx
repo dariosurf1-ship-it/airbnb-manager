@@ -1,14 +1,14 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App";
-import { PropertyProvider } from "./context/PropertyContext";
-import "./index.css";
+import App from "./App.jsx";
+import "./App.css";
 
+import CloudProvider from "./CloudProvider.jsx";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <PropertyProvider>
+    <CloudProvider>
       <App />
-    </PropertyProvider>
+    </CloudProvider>
   </React.StrictMode>
 );
