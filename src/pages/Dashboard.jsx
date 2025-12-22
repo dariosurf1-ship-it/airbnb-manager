@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { useCloud } from "../CloudProvider";
 
 function toDateOnly(d) {
-  // accetta stringhe ISO o Date
   const dt = d instanceof Date ? d : new Date(d);
   if (Number.isNaN(dt.getTime())) return null;
   return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
@@ -13,20 +12,17 @@ function isTodayBetween(checkIn, checkOut) {
   const ci = toDateOnly(checkIn);
   const co = toDateOnly(checkOut);
   if (!today || !ci || !co) return null;
-
-  // Occupato se today >= checkin e today < checkout
   return today.getTime() >= ci.getTime() && today.getTime() < co.getTime();
 }
 
 function computeStatusForProperty(propertyId, bookings) {
-  // bookings attesi: [{ property_id, check_in, check_out, status }]
-  // se non c'è niente, status = unknown
-  if (!Array.isArray(bookings) || bookings.length === 0) return { key: "unknown", label: "—" };
+  if (!Array.isArray(bookings) || bookings.length === 0) {
+    return { key: "turnover", label: "— Stato non disponibile" };
+  }
 
   const list = bookings.filter((b) => b.property_id === propertyId);
   if (list.length === 0) return { key: "free", label: "🟢 Libero" };
 
-  // se trovi almeno una prenotazione oggi, è occupato
   const occupied = list.some((b) => isTodayBetween(b.check_in, b.check_out));
   if (occupied) return { key: "busy", label: "🔴 Occupato" };
 
@@ -36,22 +32,55 @@ function computeStatusForProperty(propertyId, bookings) {
 export default function Dashboard() {
   const { properties = [], selectedId, setSelectedId, bookings = [] } = useCloud();
 
+  const active = useMemo(
+    () => properties.find((p) => p.id === selectedId) || null,
+    [properties, selectedId]
+  );
+
   const cards = useMemo(() => {
-    return properties.map((p) => {
-      const st = computeStatusForProperty(p.id, bookings);
-      return { p, st };
-    });
+    return properties.map((p) => ({ p, st: computeStatusForProperty(p.id, bookings) }));
   }, [properties, bookings]);
 
   return (
-    <div style={{ display: "grid", gap: 16 }}>
-      <div>
-        <h2 style={{ margin: 0, fontSize: 22 }}>Dashboard</h2>
-        <div style={{ marginTop: 6, opacity: 0.8 }}>
-          Seleziona un appartamento dalla sidebar per lavorare nel contesto corretto.
+    <div style={{ display: "grid", gap: 14 }}>
+      {/* TOP BAR */}
+      <div className="topbar">
+        <div className="left">
+          <h1>Dashboard</h1>
+          <div className="hint">
+            {active ? (
+              <>
+                Stai lavorando su <b>{active.name}</b>
+              </>
+            ) : (
+              <>Seleziona un appartamento per iniziare.</>
+            )}
+          </div>
+        </div>
+
+        <div className="kpi">
+          <div className="pill">
+            🏠 Appartamenti <strong>{properties.length}</strong>
+          </div>
+          <button
+            className="btn"
+            onClick={() => {
+              if (active?.id) {
+                navigator.clipboard
+                  .writeText(active.id)
+                  .then(() => alert("property_id copiato ✅"))
+                  .catch(() => alert("Copia manualmente."));
+              } else {
+                alert("Seleziona un appartamento prima.");
+              }
+            }}
+          >
+            📋 Copia property_id
+          </button>
         </div>
       </div>
 
+      {/* GRID */}
       {properties.length === 0 ? (
         <div className="panel">
           <div style={{ opacity: 0.85 }}>
@@ -71,46 +100,42 @@ export default function Dashboard() {
                 className="property-card"
                 onClick={() => setSelectedId?.(p.id)}
                 role="button"
-                style={{
-                  cursor: "pointer",
-                  outline: isActive ? "1px solid rgba(37,99,235,0.35)" : "none",
-                }}
                 title="Clicca per selezionare"
+                style={{ cursor: "pointer" }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                  <h3 style={{ margin: 0 }}>{p.name}</h3>
-                  {isActive ? (
-                    <span className="status-pill turnover">⭐ Attivo</span>
-                  ) : (
-                    <span className="status-pill">Seleziona</span>
-                  )}
+                <div className="card-head">
+                  <div className="card-title">
+                    <h3>{p.name}</h3>
+                    <div className="addr">{p.address ? p.address : "—"}</div>
+                  </div>
+
+                  <div style={{ display: "grid", gap: 8, justifyItems: "end" }}>
+                    <span className={`status-pill ${st.key}`}>{st.label}</span>
+                    {isActive ? <span className="status-pill active">⭐ Attivo</span> : null}
+                  </div>
                 </div>
 
-                <div style={{ marginTop: 10 }}>
-                  <span className={`status-pill ${st.key === "busy" ? "busy" : st.key === "free" ? "free" : ""}`}>
-                    {st.label}
-                  </span>
-                </div>
-
-                <div className="small-muted">
-                  <div>
-                    <b>property_id:</b>{" "}
+                <div className="meta">
+                  <div className="row">
+                    <span>
+                      <b>Check-in</b>
+                    </span>
+                    <span>{p.check_in_time || "—"}</span>
+                  </div>
+                  <div className="row">
+                    <span>
+                      <b>Check-out</b>
+                    </span>
+                    <span>{p.check_out_time || "—"}</span>
+                  </div>
+                  <div className="row">
+                    <span>
+                      <b>property_id</b>
+                    </span>
                     <span style={{ fontFamily: "ui-monospace, Menlo, monospace" }}>
                       {String(p.id).slice(0, 8)}…{String(p.id).slice(-6)}
                     </span>
                   </div>
-
-                  {p.check_in_time || p.check_out_time ? (
-                    <div style={{ marginTop: 6 }}>
-                      <b>Check-in:</b> {p.check_in_time || "—"} • <b>Check-out:</b> {p.check_out_time || "—"}
-                    </div>
-                  ) : null}
-
-                  {p.address ? (
-                    <div style={{ marginTop: 6 }}>
-                      <b>Indirizzo:</b> {p.address}
-                    </div>
-                  ) : null}
                 </div>
               </div>
             );

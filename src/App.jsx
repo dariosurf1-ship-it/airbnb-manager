@@ -1,4 +1,12 @@
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
+
 import Sidebar from "./components/Sidebar";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -16,28 +24,48 @@ import { signOut } from "./lib/cloud";
 import { Button } from "./ui";
 
 function Protected({ children }) {
-  const { session, loading } = useCloud();
+  const cloud = useCloud();
+  const session = cloud?.session;
+  const loading = cloud?.loading;
+
   if (loading) return <div style={{ padding: 20, opacity: 0.85 }}>Caricamento...</div>;
   if (!session) return <Navigate to="/login" replace />;
   return children;
 }
 
 function TopBar() {
-  const { session } = useCloud();
+  const cloud = useCloud();
+  const session = cloud?.session;
+
+  // ✅ anti-crash: se non esistono, non rompiamo nulla
+  const properties = Array.isArray(cloud?.properties) ? cloud.properties : [];
+  const selectedId = cloud?.selectedId ?? cloud?.activePropertyId ?? null;
+
   const nav = useNavigate();
   const loc = useLocation();
 
   if (!session) return null;
 
   const is = (p) => loc.pathname === p;
+  const active = selectedId ? properties.find((p) => p.id === selectedId) : null;
 
   return (
-    <div style={topBar}>
-      <div style={{ opacity: 0.75, fontSize: 12 }}>
-        Logged as: <b>{session.user.email}</b>
+    <div className="topbar">
+      <div className="left">
+        <h1>Airbnb Manager</h1>
+        <div className="hint">
+          {active ? (
+            <>
+              Stai lavorando su <b>{active.name}</b>
+            </>
+          ) : (
+            <>Seleziona un appartamento dalla sidebar.</>
+          )}
+          {" "}• Logged as: <b>{session.user.email}</b>
+        </div>
       </div>
 
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
         <Button variant="secondary" onClick={() => nav("/profilo")} style={is("/profilo") ? activeBtn : null}>
           Profilo
         </Button>
@@ -65,17 +93,18 @@ function TopBar() {
 }
 
 export default function App() {
-  const { session } = useCloud();
+  const cloud = useCloud();
+  const session = cloud?.session;
 
   return (
     <BrowserRouter>
-      <div style={appShell}>
+      <div className="app-shell">
         {session ? <Sidebar /> : null}
 
-        <main style={main}>
+        <main className="main">
           <TopBar />
 
-          <div style={contentWrap}>
+          <div className="panel">
             <Routes>
               <Route path="/login" element={<Login />} />
 
@@ -96,27 +125,6 @@ export default function App() {
   );
 }
 
-const appShell = { minHeight: "100vh", display: "flex", color: "var(--text)" };
-const main = { flex: 1, padding: 22, maxWidth: 1280, width: "100%" };
-
-const topBar = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  gap: 10,
-  marginBottom: 14,
-};
-
 const activeBtn = {
   boxShadow: "0 0 0 1px rgba(47,111,237,0.35) inset, 0 16px 40px rgba(47,111,237,0.12)",
-};
-
-const contentWrap = {
-  width: "100%",
-  borderRadius: 22,
-  padding: 18,
-  border: "1px solid rgba(255,255,255,0.10)",
-  background: "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03))",
-  boxShadow: "0 24px 80px rgba(0,0,0,0.25)",
-  backdropFilter: "blur(10px)",
 };
