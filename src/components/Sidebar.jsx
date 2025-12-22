@@ -25,10 +25,12 @@ export default function Sidebar() {
 
   const isActivePath = (p) => loc.pathname === p;
 
+  // Se non loggato, non mostrare nulla (ma la shell resta coerente)
   if (!session) return null;
 
   return (
-    <aside style={s.aside}>
+    // ✅ NON usare <aside> qui (lo fa già la shell)
+    <div style={s.container}>
       <div style={s.brand} onClick={() => nav("/")} role="button" tabIndex={0}>
         <div style={s.logo}>🏠</div>
         <div>
@@ -52,7 +54,7 @@ export default function Sidebar() {
                 style={{ ...s.propBtn, ...(active ? s.propBtnActive : null) }}
                 title={p.id}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                   <div style={{ ...s.dot, ...(active ? s.dotActive : null) }} />
                   <div style={{ minWidth: 0 }}>
                     <div style={s.propName}>{p.name || "Appartamento"}</div>
@@ -105,21 +107,19 @@ export default function Sidebar() {
           </b>
         </div>
       </div>
-    </aside>
+    </div>
   );
 }
 
 const s = {
-  aside: {
-    width: 320,
-    minHeight: "100vh",
+  // ✅ SOLO padding + layout interno. NIENTE width/sticky/minHeight qui.
+  container: {
     padding: 18,
-    position: "sticky",
-    top: 0,
-    borderRight: "1px solid rgba(255,255,255,0.10)",
-    background: "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))",
-    backdropFilter: "blur(14px)",
+    display: "flex",
+    flexDirection: "column",
+    gap: 0,
   },
+
   brand: {
     display: "flex",
     alignItems: "center",

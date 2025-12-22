@@ -2,9 +2,8 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
 
-// IMPORT CSS (attenzione a maiuscole/minuscole!)
-import "./styles.css";
-import "./App.css";
+import "./styles.css";   // CSS globale principale
+// import "./App.css";   // <-- LASCIA COMMENTATO o rimuovi (spesso rompe il layout)
 
 import { CloudProvider } from "./CloudProvider.jsx";
 
