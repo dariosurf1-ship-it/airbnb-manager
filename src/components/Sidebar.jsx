@@ -2,103 +2,223 @@ import { useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCloud } from "../CloudProvider";
 
-const PAGES = [
-  { path: "/", label: "Dashboard", icon: "📊" },
-  { path: "/prenotazioni", label: "Prenotazioni", icon: "🧾" },
-  { path: "/calendario", label: "Calendario", icon: "🗓️" },
-  { path: "/codici", label: "Codici", icon: "🔐" },
-  { path: "/operativita", label: "Operatività", icon: "✅" },
-];
-
-function roleBadgeClass(role) {
-  const r = String(role || "").toLowerCase();
-  if (r === "admin") return "admin";
-  if (r === "viewer") return "viewer";
-  return "editor";
+function shortId(id) {
+  if (!id) return "";
+  return String(id).slice(0, 8) + "…";
 }
 
 export default function Sidebar() {
+  const { properties, selectedId, selectProperty, session, loading } = useCloud();
   const nav = useNavigate();
   const loc = useLocation();
 
-  const { properties = [], selectedId, setSelectedId, myRolesByProperty = {} } = useCloud();
-
-  const active = useMemo(
-    () => properties.find((p) => p.id === selectedId) || null,
-    [properties, selectedId]
+  const menu = useMemo(
+    () => [
+      { label: "Dashboard", path: "/", icon: "📊" },
+      { label: "Prenotazioni", path: "/prenotazioni", icon: "🗓️" },
+      { label: "Calendario", path: "/calendario", icon: "📅" },
+      { label: "Codici", path: "/codici", icon: "🔑" },
+      { label: "Operatività", path: "/operativita", icon: "✅" },
+    ],
+    []
   );
 
-  function go(path) {
-    nav(path);
-  }
+  const isActivePath = (p) => loc.pathname === p;
+
+  if (!session) return null;
 
   return (
-    <aside className="sidebar">
-      <div className="brand">
-        <div className="logo">🏡</div>
-        <div className="title">
-          <b>Airbnb Manager</b>
-          <span>Gestione appartamenti</span>
+    <aside style={s.aside}>
+      <div style={s.brand} onClick={() => nav("/")} role="button" tabIndex={0}>
+        <div style={s.logo}>🏠</div>
+        <div>
+          <div style={s.title}>Gestore Airbnb</div>
+          <div style={s.sub}>Cloud • Supabase</div>
         </div>
       </div>
 
-      <h3>Appartamenti</h3>
+      <div style={s.sectionTitle}>APPARTAMENTI</div>
 
-      {properties.length === 0 ? (
-        <div style={{ opacity: 0.8, fontSize: 13, lineHeight: 1.4 }}>
-          Non vedo appartamenti.
-          <br />
-          Se è il primo accesso, prova a ricaricare la pagina.
-        </div>
-      ) : (
-        <div className="list">
-          {properties.map((p) => {
-            const isActive = p.id === selectedId;
-            const role = myRolesByProperty?.[p.id] || "editor";
-
+      <div style={s.propsWrap}>
+        {loading ? (
+          <div style={s.muted}>Carico appartamenti…</div>
+        ) : properties?.length ? (
+          properties.map((p) => {
+            const active = p.id === selectedId;
             return (
-              <div
+              <button
                 key={p.id}
-                className={`item ${isActive ? "active" : ""}`}
-                onClick={() => setSelectedId?.(p.id)}
-                role="button"
+                onClick={() => selectProperty(p.id)}
+                style={{ ...s.propBtn, ...(active ? s.propBtnActive : null) }}
                 title={p.id}
               >
-                <span style={{ fontSize: 16 }}>🏠</span>
-                <div style={{ display: "grid" }}>
-                  <div style={{ fontWeight: 900 }}>{p.name}</div>
-                  <div className="sub">{p.address ? p.address : `ID: ${String(p.id).slice(0, 8)}…`}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ ...s.dot, ...(active ? s.dotActive : null) }} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={s.propName}>{p.name || "Appartamento"}</div>
+                    <div style={s.propMeta}>
+                      ID: <span style={{ opacity: 0.85 }}>{shortId(p.id)}</span>
+                      {p.role ? (
+                        <>
+                          {" "}
+                          • <span style={s.rolePill}>{p.role}</span>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
                 </div>
-
-                <span className={`badge ${roleBadgeClass(role)}`}>{role}</span>
-              </div>
+                <div style={s.chev}>›</div>
+              </button>
             );
-          })}
-        </div>
-      )}
+          })
+        ) : (
+          <div style={s.muted}>Nessun appartamento disponibile.</div>
+        )}
+      </div>
 
-      {active ? (
-        <div style={{ marginTop: 14 }}>
-          <h3>Menu</h3>
+      <div style={s.sectionTitle}>MENU</div>
 
-          <div className="list">
-            {PAGES.map((p) => {
-              const isHere = loc.pathname === p.path;
-              return (
-                <div
-                  key={p.path}
-                  className={`item ${isHere ? "active" : ""}`}
-                  onClick={() => go(p.path)}
-                  role="button"
-                >
-                  <span style={{ fontSize: 16 }}>{p.icon}</span>
-                  <div style={{ fontWeight: 900 }}>{p.label}</div>
-                </div>
-              );
-            })}
-          </div>
+      <nav style={s.nav}>
+        {menu.map((m) => {
+          const active = isActivePath(m.path);
+          return (
+            <button
+              key={m.path}
+              onClick={() => nav(m.path)}
+              style={{ ...s.navBtn, ...(active ? s.navBtnActive : null) }}
+            >
+              <span style={s.navIcon}>{m.icon}</span>
+              <span style={s.navLabel}>{m.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      <div style={s.footer}>
+        <div style={s.footerLine}>
+          Logged as: <b style={{ marginLeft: 6 }}>{session.user.email}</b>
         </div>
-      ) : null}
+        <div style={{ ...s.footerLine, opacity: 0.7 }}>
+          Selezionato:{" "}
+          <b style={{ marginLeft: 6 }}>
+            {properties?.find((p) => p.id === selectedId)?.name || "—"}
+          </b>
+        </div>
+      </div>
     </aside>
   );
 }
+
+const s = {
+  aside: {
+    width: 320,
+    minHeight: "100vh",
+    padding: 18,
+    position: "sticky",
+    top: 0,
+    borderRight: "1px solid rgba(255,255,255,0.10)",
+    background: "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))",
+    backdropFilter: "blur(14px)",
+  },
+  brand: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    padding: 14,
+    borderRadius: 18,
+    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(0,0,0,0.12)",
+    boxShadow: "0 20px 70px rgba(0,0,0,0.25)",
+    cursor: "pointer",
+    userSelect: "none",
+  },
+  logo: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    display: "grid",
+    placeItems: "center",
+    background: "linear-gradient(135deg, rgba(47,111,237,0.30), rgba(16,185,129,0.20))",
+    border: "1px solid rgba(255,255,255,0.12)",
+    fontSize: 20,
+  },
+  title: { fontWeight: 800, letterSpacing: 0.2 },
+  sub: { opacity: 0.7, fontSize: 12, marginTop: 2 },
+
+  sectionTitle: { marginTop: 16, marginBottom: 10, opacity: 0.75, fontSize: 12, letterSpacing: 1 },
+
+  propsWrap: { display: "grid", gap: 10 },
+  muted: { opacity: 0.7, fontSize: 13, padding: "6px 2px" },
+
+  propBtn: {
+    width: "100%",
+    textAlign: "left",
+    padding: 12,
+    borderRadius: 16,
+    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(255,255,255,0.03)",
+    color: "var(--text)",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 10,
+    cursor: "pointer",
+  },
+  propBtnActive: {
+    background: "linear-gradient(135deg, rgba(47,111,237,0.18), rgba(16,185,129,0.10))",
+    boxShadow: "0 0 0 1px rgba(47,111,237,0.25) inset, 0 18px 60px rgba(0,0,0,0.25)",
+  },
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 999,
+    background: "rgba(255,255,255,0.25)",
+    boxShadow: "0 0 0 3px rgba(255,255,255,0.04)",
+    flex: "0 0 auto",
+  },
+  dotActive: {
+    background: "rgba(16,185,129,0.95)",
+    boxShadow: "0 0 0 3px rgba(16,185,129,0.15)",
+  },
+  propName: { fontWeight: 750, lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+  propMeta: { opacity: 0.75, fontSize: 12, marginTop: 4 },
+  rolePill: {
+    display: "inline-block",
+    padding: "2px 8px",
+    borderRadius: 999,
+    border: "1px solid rgba(255,255,255,0.12)",
+    background: "rgba(0,0,0,0.18)",
+    fontSize: 11,
+    textTransform: "lowercase",
+  },
+  chev: { opacity: 0.5, fontSize: 18 },
+
+  nav: { display: "grid", gap: 10 },
+  navBtn: {
+    width: "100%",
+    textAlign: "left",
+    padding: "12px 12px",
+    borderRadius: 16,
+    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(255,255,255,0.03)",
+    color: "var(--text)",
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    cursor: "pointer",
+  },
+  navBtnActive: {
+    background: "rgba(47,111,237,0.14)",
+    boxShadow: "0 0 0 1px rgba(47,111,237,0.25) inset",
+  },
+  navIcon: { width: 22, textAlign: "center" },
+  navLabel: { fontWeight: 650 },
+
+  footer: {
+    marginTop: 16,
+    paddingTop: 12,
+    borderTop: "1px solid rgba(255,255,255,0.10)",
+    opacity: 0.9,
+  },
+  footerLine: { fontSize: 12, opacity: 0.85, marginTop: 6 },
+};

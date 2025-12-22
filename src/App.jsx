@@ -106,8 +106,7 @@ export default function App() {
 
           <div className="panel">
             <Routes>
-              <Route path="/login" element={<Login />} />
-
+              <Route path="/login" element={session ? <Navigate to="/" replace /> : <Login />} />
               <Route path="/" element={<Protected><Dashboard /></Protected>} />
               <Route path="/prenotazioni" element={<Protected><Prenotazioni /></Protected>} />
               <Route path="/calendario" element={<Protected><Calendario /></Protected>} />

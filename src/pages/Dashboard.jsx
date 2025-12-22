@@ -1,147 +1,208 @@
 import { useMemo } from "react";
 import { useCloud } from "../CloudProvider";
+import { Card } from "../ui";
 
-function toDateOnly(d) {
-  const dt = d instanceof Date ? d : new Date(d);
-  if (Number.isNaN(dt.getTime())) return null;
-  return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+function shortId(id) {
+  if (!id) return "";
+  return String(id).slice(0, 8) + "…";
 }
 
-function isTodayBetween(checkIn, checkOut) {
-  const today = toDateOnly(new Date());
-  const ci = toDateOnly(checkIn);
-  const co = toDateOnly(checkOut);
-  if (!today || !ci || !co) return null;
-  return today.getTime() >= ci.getTime() && today.getTime() < co.getTime();
-}
-
-function computeStatusForProperty(propertyId, bookings) {
-  if (!Array.isArray(bookings) || bookings.length === 0) {
-    return { key: "turnover", label: "— Stato non disponibile" };
-  }
-
-  const list = bookings.filter((b) => b.property_id === propertyId);
-  if (list.length === 0) return { key: "free", label: "🟢 Libero" };
-
-  const occupied = list.some((b) => isTodayBetween(b.check_in, b.check_out));
-  if (occupied) return { key: "busy", label: "🔴 Occupato" };
-
-  return { key: "free", label: "🟢 Libero" };
+function statusFromProperty(p) {
+  // Se in futuro aggiungi un campo nel DB tipo p.is_occupied o p.status, qui lo usi.
+  if (typeof p?.status === "string") return p.status;
+  if (typeof p?.is_occupied === "boolean") return p.is_occupied ? "Occupato" : "Libero";
+  return "—";
 }
 
 export default function Dashboard() {
-  const { properties = [], selectedId, setSelectedId, bookings = [] } = useCloud();
+  const { properties, selectedId, selectedProperty, selectProperty, loading } = useCloud();
 
-  const active = useMemo(
-    () => properties.find((p) => p.id === selectedId) || null,
-    [properties, selectedId]
-  );
-
-  const cards = useMemo(() => {
-    return properties.map((p) => ({ p, st: computeStatusForProperty(p.id, bookings) }));
-  }, [properties, bookings]);
+  const cards = useMemo(() => properties || [], [properties]);
 
   return (
-    <div style={{ display: "grid", gap: 14 }}>
-      {/* TOP BAR */}
-      <div className="topbar">
-        <div className="left">
-          <h1>Dashboard</h1>
-          <div className="hint">
-            {active ? (
+    <div style={s.wrap}>
+      <div style={s.headerRow}>
+        <div>
+          <div style={s.h1}>Dashboard</div>
+          <div style={s.h2}>
+            Stai lavorando su{" "}
+            <b>{selectedProperty?.name || "—"}</b>
+            {selectedProperty?.id ? (
               <>
-                Stai lavorando su <b>{active.name}</b>
+                {" "}
+                • <span style={{ opacity: 0.8 }}>ID:</span> {shortId(selectedProperty.id)}
               </>
-            ) : (
-              <>Seleziona un appartamento per iniziare.</>
-            )}
+            ) : null}
           </div>
         </div>
 
-        <div className="kpi">
-          <div className="pill">
-            🏠 Appartamenti <strong>{properties.length}</strong>
-          </div>
-          <button
-            className="btn"
-            onClick={() => {
-              if (active?.id) {
-                navigator.clipboard
-                  .writeText(active.id)
-                  .then(() => alert("property_id copiato ✅"))
-                  .catch(() => alert("Copia manualmente."));
-              } else {
-                alert("Seleziona un appartamento prima.");
-              }
-            }}
-          >
-            📋 Copia property_id
-          </button>
+        <div style={s.pill}>
+          {loading ? "Caricamento…" : `${cards.length} appartamenti`}
         </div>
       </div>
 
-      {/* GRID */}
-      {properties.length === 0 ? (
-        <div className="panel">
-          <div style={{ opacity: 0.85 }}>
-            Nessun appartamento accessibile.
-            <br />
-            Se è il primo accesso, prova a ricaricare la pagina.
-          </div>
-        </div>
-      ) : (
-        <div className="dashboard-grid">
-          {cards.map(({ p, st }) => {
-            const isActive = p.id === selectedId;
+      <div style={s.grid}>
+        {loading ? (
+          <Card title="Caricamento" subtitle="Recupero appartamenti dal cloud…">
+            <div style={{ opacity: 0.8 }}>Attendi qualche secondo.</div>
+          </Card>
+        ) : cards.length === 0 ? (
+          <Card title="Nessun appartamento" subtitle="Se è il primo accesso, ricarica la pagina.">
+            <div style={{ opacity: 0.8 }}>
+              Se continui a non vedere nulla, controlla le policy RLS e i permessi.
+            </div>
+          </Card>
+        ) : (
+          cards.map((p) => {
+            const active = p.id === selectedId;
+            const st = statusFromProperty(p);
 
             return (
-              <div
-                key={p.id}
-                className="property-card"
-                onClick={() => setSelectedId?.(p.id)}
-                role="button"
-                title="Clicca per selezionare"
-                style={{ cursor: "pointer" }}
-              >
-                <div className="card-head">
-                  <div className="card-title">
-                    <h3>{p.name}</h3>
-                    <div className="addr">{p.address ? p.address : "—"}</div>
+              <div key={p.id} style={{ ...s.card, ...(active ? s.cardActive : null) }}>
+                <div style={s.cardTop}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={s.cardTitle}>{p.name || "Appartamento"}</div>
+                    <div style={s.cardSub}>
+                      ID: <span style={{ opacity: 0.85 }}>{shortId(p.id)}</span>
+                      {p.role ? (
+                        <>
+                          {" "}
+                          • <span style={s.rolePill}>{p.role}</span>
+                        </>
+                      ) : null}
+                    </div>
                   </div>
 
-                  <div style={{ display: "grid", gap: 8, justifyItems: "end" }}>
-                    <span className={`status-pill ${st.key}`}>{st.label}</span>
-                    {isActive ? <span className="status-pill active">⭐ Attivo</span> : null}
+                  <div style={{ ...s.badge, ...(st === "Occupato" ? s.badgeBusy : st === "Libero" ? s.badgeFree : null) }}>
+                    {st}
                   </div>
                 </div>
 
-                <div className="meta">
-                  <div className="row">
-                    <span>
-                      <b>Check-in</b>
-                    </span>
-                    <span>{p.check_in_time || "—"}</span>
+                <div style={s.cardBody}>
+                  <div style={s.kpiRow}>
+                    <div style={s.kpiBox}>
+                      <div style={s.kpiLabel}>Check-in</div>
+                      <div style={s.kpiValue}>{p.check_in_time || "—"}</div>
+                    </div>
+                    <div style={s.kpiBox}>
+                      <div style={s.kpiLabel}>Check-out</div>
+                      <div style={s.kpiValue}>{p.check_out_time || "—"}</div>
+                    </div>
                   </div>
-                  <div className="row">
-                    <span>
-                      <b>Check-out</b>
-                    </span>
-                    <span>{p.check_out_time || "—"}</span>
-                  </div>
-                  <div className="row">
-                    <span>
-                      <b>property_id</b>
-                    </span>
-                    <span style={{ fontFamily: "ui-monospace, Menlo, monospace" }}>
-                      {String(p.id).slice(0, 8)}…{String(p.id).slice(-6)}
-                    </span>
-                  </div>
+
+                  <button onClick={() => selectProperty(p.id)} style={{ ...s.selectBtn, ...(active ? s.selectBtnActive : null) }}>
+                    {active ? "Selezionato" : "Seleziona"}
+                  </button>
                 </div>
               </div>
             );
-          })}
-        </div>
-      )}
+          })
+        )}
+      </div>
     </div>
   );
 }
+
+const s = {
+  wrap: { width: "100%" },
+  headerRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 14,
+    alignItems: "flex-end",
+    marginBottom: 14,
+  },
+  h1: { fontSize: 22, fontWeight: 850 },
+  h2: { marginTop: 6, opacity: 0.8, fontSize: 13 },
+
+  pill: {
+    padding: "8px 12px",
+    borderRadius: 999,
+    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(0,0,0,0.12)",
+    fontSize: 12,
+    opacity: 0.9,
+    height: "fit-content",
+  },
+
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: 14,
+  },
+
+  card: {
+    borderRadius: 20,
+    border: "1px solid rgba(255,255,255,0.10)",
+    background: "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03))",
+    boxShadow: "0 22px 70px rgba(0,0,0,0.22)",
+    overflow: "hidden",
+  },
+  cardActive: {
+    boxShadow: "0 0 0 1px rgba(47,111,237,0.25) inset, 0 26px 80px rgba(0,0,0,0.28)",
+  },
+  cardTop: {
+    padding: 16,
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 12,
+    alignItems: "flex-start",
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
+  },
+  cardTitle: { fontWeight: 850, fontSize: 16, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+  cardSub: { marginTop: 6, opacity: 0.75, fontSize: 12 },
+
+  badge: {
+    padding: "6px 10px",
+    borderRadius: 999,
+    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(0,0,0,0.18)",
+    fontSize: 12,
+    fontWeight: 700,
+    whiteSpace: "nowrap",
+  },
+  badgeFree: {
+    background: "rgba(16,185,129,0.14)",
+    border: "1px solid rgba(16,185,129,0.22)",
+  },
+  badgeBusy: {
+    background: "rgba(239,68,68,0.14)",
+    border: "1px solid rgba(239,68,68,0.22)",
+  },
+
+  rolePill: {
+    display: "inline-block",
+    padding: "2px 8px",
+    borderRadius: 999,
+    border: "1px solid rgba(255,255,255,0.12)",
+    background: "rgba(0,0,0,0.18)",
+    fontSize: 11,
+    textTransform: "lowercase",
+  },
+
+  cardBody: { padding: 16 },
+  kpiRow: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 },
+  kpiBox: {
+    padding: 12,
+    borderRadius: 16,
+    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(0,0,0,0.10)",
+  },
+  kpiLabel: { fontSize: 12, opacity: 0.75 },
+  kpiValue: { marginTop: 6, fontSize: 14, fontWeight: 800 },
+
+  selectBtn: {
+    width: "100%",
+    padding: "10px 12px",
+    borderRadius: 16,
+    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(255,255,255,0.05)",
+    color: "var(--text)",
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+  selectBtnActive: {
+    background: "rgba(47,111,237,0.16)",
+    boxShadow: "0 0 0 1px rgba(47,111,237,0.25) inset",
+  },
+};
