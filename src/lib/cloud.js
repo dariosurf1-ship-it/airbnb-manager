@@ -1,3 +1,4 @@
+// src/lib/cloud.js
 import { supabase } from "../supabaseClient";
 
 /**
@@ -20,27 +21,67 @@ export async function signOut() {
   if (error) throw error;
 }
 
+function normalizeRole(role) {
+  const r = (role || "").toLowerCase().trim();
+  if (r === "owner") return "admin"; // owner treated as admin
+  if (r === "admin") return "admin";
+  if (r === "cleaner") return "cleaner";
+  if (r === "viewer") return "viewer";
+  return null;
+}
+
 /**
- * Roles / Memberships
+ * Roles / Memberships (ROBUST)
  */
 export async function fetchMyRoleForProperty(propertyId) {
   const session = await getSession();
   const userId = session?.user?.id;
   if (!userId || !propertyId) return null;
 
-  const { data, error } = await supabase
-    .from("memberships")
-    .select("role")
-    .eq("property_id", propertyId)
-    .eq("user_id", userId)
-    .maybeSingle();
+  // 1) Se sei app admin => admin
+  try {
+    const { data: adminRow, error: aErr } = await supabase
+      .from("app_admins")
+      .select("user_id")
+      .eq("user_id", userId)
+      .maybeSingle();
 
-  // Se non c'è membership, potrebbe essere owner (owner_id sulle properties). In quel caso è admin.
-  if (error) {
-    console.warn("fetchMyRoleForProperty error:", error);
+    if (!aErr && adminRow?.user_id) return "admin";
+  } catch (e) {
+    // ignore
+  }
+
+  // 2) Se sei owner della property => admin
+  try {
+    const { data: prop, error: pErr } = await supabase
+      .from("properties")
+      .select("owner_id")
+      .eq("id", propertyId)
+      .maybeSingle();
+
+    if (!pErr && prop?.owner_id === userId) return "admin";
+  } catch (e) {
+    // ignore
+  }
+
+  // 3) membership role (se disponibile)
+  try {
+    const { data, error } = await supabase
+      .from("memberships")
+      .select("role")
+      .eq("property_id", propertyId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("fetchMyRoleForProperty memberships error:", error);
+      return null;
+    }
+    return normalizeRole(data?.role) || null;
+  } catch (e) {
+    console.warn("fetchMyRoleForProperty memberships exception:", e);
     return null;
   }
-  return data?.role || null;
 }
 
 /**
@@ -67,7 +108,6 @@ export async function ensureDefaultProperties() {
   const existing = await fetchProperties();
   if (existing.length >= 3) return existing;
 
-  const missingCount = 3 - existing.length;
   const names = ["Appartamento 1", "Appartamento 2", "Appartamento 3"];
 
   const toCreate = [];
@@ -86,7 +126,6 @@ export async function ensureDefaultProperties() {
       });
     }
   }
-  while (toCreate.length > missingCount) toCreate.pop();
 
   if (toCreate.length > 0) {
     const { data: inserted, error } = await supabase
@@ -96,6 +135,7 @@ export async function ensureDefaultProperties() {
 
     if (error) throw error;
 
+    // prova a inserire memberships, ma se RLS rompe non blocchiamo l'app
     const memberships = (inserted || []).map((p) => ({
       property_id: p.id,
       user_id: userId,
@@ -104,9 +144,7 @@ export async function ensureDefaultProperties() {
 
     if (memberships.length) {
       const { error: mErr } = await supabase.from("memberships").insert(memberships);
-      if (mErr && !String(mErr.message || "").toLowerCase().includes("duplicate")) {
-        console.warn("Membership insert warning:", mErr);
-      }
+      if (mErr) console.warn("Membership insert warning:", mErr);
     }
   }
 
@@ -130,7 +168,7 @@ export async function updateProperty(propertyId, patch) {
 }
 
 /**
- * BOOKINGS (Prenotazioni) CRUD
+ * BOOKINGS CRUD (se usi cloud.js in qualche pagina)
  */
 export async function fetchBookings(propertyId) {
   if (!propertyId) return [];
@@ -155,7 +193,7 @@ export async function createBooking(propertyId, payload) {
     property_id: propertyId,
     guest: payload.guest,
     channel: payload.channel || "Airbnb",
-    status: payload.status || "Confermata",
+    status: payload.status || "confirmed",
     check_in: payload.check_in,
     check_out: payload.check_out,
     people: Number(payload.people || 1),
@@ -191,12 +229,10 @@ export async function deleteBooking(bookingId) {
   if (error) throw error;
   return true;
 }
+
 /**
  * MEMBERSHIPS management
- * - list members for a property
- * - add/remove members
  */
-
 export async function fetchMembers(propertyId) {
   if (!propertyId) return [];
   const { data, error } = await supabase

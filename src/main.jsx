@@ -1,16 +1,18 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
 import App from "./App.jsx";
-
-import "./styles.css";   // CSS globale principale
-// import "./App.css";   // <-- LASCIA COMMENTATO o rimuovi (spesso rompe il layout)
-
 import { CloudProvider } from "./CloudProvider.jsx";
+
+import "./styles/theme.css";
+import "./styles/layout.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <CloudProvider>
-      <App />
-    </CloudProvider>
+    <BrowserRouter>
+      <CloudProvider>
+        <App />
+      </CloudProvider>
+    </BrowserRouter>
   </React.StrictMode>
 );

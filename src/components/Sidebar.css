@@ -1,0 +1,143 @@
+/* src/components/Sidebar.css */
+
+.sb {
+  height: 100%;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.sb-brand {
+  padding: 12px 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sb-brand-title {
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  font-size: 15px;
+}
+
+.sb-brand-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.sb-section {
+  padding: 10px 0;
+}
+
+.sb-section-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0 2px 10px;
+}
+
+.sb-props {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sb-prop {
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  transition: transform 120ms ease, background 120ms ease, border 120ms ease;
+}
+
+.sb-prop:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.sb-prop.active {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.sb-prop-name {
+  font-weight: 750;
+  font-size: 13px;
+}
+
+.sb-prop-id {
+  margin-top: 4px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.sb-empty {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 8px 2px;
+}
+
+.sb-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sb-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: transform 120ms ease, background 120ms ease, border 120ms ease;
+}
+
+.sb-link:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.sb-link.active {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.sb-ico {
+  display: inline-flex;
+  width: 20px;
+  justify-content: center;
+  align-items: center;
+}
+
+.sb-label {
+  font-size: 13.5px;
+  font-weight: 650;
+}
+
+.sb-footer {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sb-footer-row {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.sb-muted {
+  color: rgba(255, 255, 255, 0.6);
+}

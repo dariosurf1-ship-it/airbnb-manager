@@ -1,71 +1,86 @@
-import React from "react";
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 
-import Login from "./pages/Login.jsx";
+import PropertyLayout from "./layouts/PropertyLayout.jsx";
+
 import Dashboard from "./pages/Dashboard.jsx";
 import Prenotazioni from "./pages/Prenotazioni.jsx";
 import Calendario from "./pages/Calendario.jsx";
 import Codici from "./pages/Codici.jsx";
 import Operativita from "./pages/Operativita.jsx";
 import Profilo from "./pages/Profilo.jsx";
-import Condivisione from "./pages/Condivisione.jsx";
 import Accessi from "./pages/Accessi.jsx";
+import Condivisione from "./pages/Condivisione.jsx";
+import Login from "./pages/Login.jsx";
 
-import Sidebar from "./components/Sidebar.jsx";
+import { useCloud } from "./CloudProvider.jsx";
 
-function Layout() {
-  return (
-    <div className="appShell">
-      {/* 🔴 TEST: se non lo vedi, non stai eseguendo questo file */}
-      <div
-        style={{
-          position: "fixed",
-          top: 10,
-          right: 10,
-          zIndex: 999999,
-          background: "red",
-          color: "white",
-          padding: "8px 10px",
-          borderRadius: 10,
-          fontWeight: 800,
-          letterSpacing: 0.3,
-        }}
-      >
-        LAYOUT OK
-      </div>
-
-      <div className="sidebar">
-        <Sidebar />
-      </div>
-
-      <main className="main">
-        <div className="mainInner">
-          <Outlet />
-        </div>
-      </main>
-    </div>
-  );
+function PropertyLayoutKeyed() {
+  // IMPORTANTISSIMO: quando cambia property, rimonta tutto -> niente pagine “vuote” finché non refreshi
+  const { selectedId } = useCloud();
+  return <PropertyLayout key={selectedId || "no-prop"} />;
 }
 
 export default function App() {
-  return (
-    <BrowserRouter>
+  const { loading, properties, selectedId, session } = useCloud();
+
+  if (loading) {
+    return (
+      <div className="page page-center">
+        <div className="card glass" style={{ maxWidth: 520, padding: 16 }}>
+          <div className="h2">Caricamento…</div>
+          <div className="muted">Sto preparando i tuoi appartamenti.</div>
+        </div>
+      </div>
+    );
+  }
+
+  // se non loggato, vai al login (se il tuo Login gestisce già auth, ok)
+  if (!session) {
+    return (
       <Routes>
         <Route path="/login" element={<Login />} />
-
-        <Route element={<Layout />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/prenotazioni" element={<Prenotazioni />} />
-          <Route path="/calendario" element={<Calendario />} />
-          <Route path="/codici" element={<Codici />} />
-          <Route path="/operativita" element={<Operativita />} />
-          <Route path="/profilo" element={<Profilo />} />
-          <Route path="/condivisione" element={<Condivisione />} />
-          <Route path="/accessi" element={<Accessi />} />
-        </Route>
-
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
-    </BrowserRouter>
+    );
+  }
+
+  // se non hai proprietà
+  if (!properties?.length) {
+    return (
+      <div className="page page-center">
+        <div className="card glass" style={{ maxWidth: 520, padding: 16 }}>
+          <div className="h2">Nessun appartamento</div>
+          <div className="muted">
+            Non risultano proprietà associate al tuo account.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // se non è selezionata una property, CloudProvider la imposta (ma qui gestiamo il caso)
+  if (!selectedId) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return (
+    <Routes>
+      {/* Tutte le pagine dentro PropertyLayout (che contiene sidebar/topbar ecc.) */}
+      <Route path="/" element={<PropertyLayoutKeyed />}>
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="prenotazioni" element={<Prenotazioni />} />
+        <Route path="calendario" element={<Calendario />} />
+        <Route path="codici" element={<Codici />} />
+        <Route path="operativita" element={<Operativita />} />
+        <Route path="profilo" element={<Profilo />} />
+        <Route path="accessi" element={<Accessi />} />
+        <Route path="condivisione" element={<Condivisione />} />
+
+        <Route index element={<Navigate to="dashboard" replace />} />
+      </Route>
+
+      {/* fallback */}
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
   );
 }

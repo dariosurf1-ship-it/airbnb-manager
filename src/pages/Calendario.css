@@ -1,0 +1,242 @@
+/* src/pages/Calendario.css */
+
+/* header */
+.calPageHeader {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.calTitleBox { display: grid; gap: 4px; }
+.calH1 { font-size: 26px; font-weight: 900; }
+.calSubtitle { opacity: 0.75; font-size: 12px; }
+
+.calControls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.calNav { display: flex; gap: 8px; align-items: center; }
+.calSearch { min-width: 220px; }
+
+.calLoading { opacity: 0.75; margin: 8px 0 10px; }
+
+/* legend */
+.calLegendCompact {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  margin-bottom: 8px;
+}
+
+.calLegendRight { margin-left: auto; opacity: 0.8; }
+
+.calDot { width: 10px; height: 10px; border-radius: 999px; display: inline-block; margin-right: 6px; }
+.calDotArr { background: rgba(110, 190, 255, 0.9); }
+.calDotDep { background: rgba(255, 120, 120, 0.9); }
+.calDotIn  { background: rgba(140, 255, 180, 0.85); }
+
+/* ---- MONTH: no gap, no scroll ----
+   Occupa "quasi tutta pagina" senza scroll, tenendo conto del tuo layout.
+*/
+.calMonthShell {
+  height: calc(100vh - 220px); /* se serve, abbassiamo/alziamo dopo */
+  min-height: 540px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* griglia mese */
+.calMonth {
+  flex: 1;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+}
+
+/* header giorni: celle attaccate */
+.calHeadRow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.calHeadCell {
+  padding: 10px 10px;
+  font-weight: 900;
+  font-size: 12px;
+  opacity: 0.85;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+.calHeadCell:last-child { border-right: 0; }
+
+/* body: 6 settimane massimo -> altezza distribuita, niente scroll */
+.calBody {
+  flex: 1;
+  display: grid;
+  grid-template-rows: repeat(6, 1fr);
+}
+
+/* una settimana: 7 colonne, celle attaccate */
+.calWeek {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.calWeek:last-child { border-bottom: 0; }
+
+/* cella giorno */
+.calDayCell {
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 8px 8px 8px;
+  min-height: 0; /* IMPORTANTISSIMO per farla “stringere” dentro la griglia */
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.calDayCell:last-child { border-right: 0; }
+
+.calOut { opacity: 0.55; }
+
+.calToday {
+  background: rgba(120, 200, 255, 0.10);
+  outline: 1px solid rgba(120, 200, 255, 0.25);
+  outline-offset: -1px;
+}
+
+.calDayTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.calDayNum { font-size: 16px; font-weight: 900; }
+.calDayWk { font-size: 11px; opacity: 0.75; text-transform: capitalize; }
+
+/* counters compatti */
+.calCounters { display: flex; gap: 6px; flex-wrap: wrap; }
+.calCounter {
+  width: 26px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+}
+.calCounterArr { border-color: rgba(110, 190, 255, 0.35); }
+.calCounterDep { border-color: rgba(255, 120, 120, 0.35); }
+.calCounterIn  { border-color: rgba(140, 255, 180, 0.30); }
+
+/* prenotazioni dentro la cella */
+.calItems {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  overflow: hidden; /* niente scroll dentro cella */
+}
+
+.calItem {
+  width: 100%;
+  text-align: left;
+  padding: 6px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: white;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.calItem:hover { transform: translateY(-1px); border-color: rgba(255, 255, 255, 0.22); }
+
+.calItem_arr { border-color: rgba(110, 190, 255, 0.35); background: rgba(110, 190, 255, 0.12); }
+.calItem_dep { border-color: rgba(255, 120, 120, 0.35); background: rgba(255, 120, 120, 0.10); }
+.calItem_inh { border-color: rgba(140, 255, 180, 0.30); background: rgba(140, 255, 180, 0.10); }
+
+.calMore {
+  font-size: 11px;
+  font-weight: 900;
+  opacity: 0.8;
+  padding-left: 4px;
+}
+
+/* --- Settimana (come prima, ok) --- */
+.calWeekCard {
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.calWeekHead {
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.calWeekTitle { font-weight: 900; font-size: 16px; }
+.calWeekSub { opacity: 0.75; font-size: 12px; }
+
+.calWeekTableWrap { overflow: auto; }
+
+.calWeekTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 860px;
+}
+
+.calWeekTable th, .calWeekTable td {
+  padding: 12px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  vertical-align: top;
+}
+
+.calWeekTable th {
+  text-align: left;
+  opacity: 0.8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.calWeekDay { width: 180px; }
+.calWeekDayTop { font-size: 13px; }
+.calWeekDaySub { opacity: 0.7; font-size: 12px; text-transform: capitalize; }
+.calWeekToday td { background: rgba(120, 200, 255, 0.08); }
+
+.calPills { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.calPill {
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.calPillArr { border-color: rgba(110, 190, 255, 0.35); background: rgba(110, 190, 255, 0.12); }
+.calPillDep { border-color: rgba(255, 120, 120, 0.35); background: rgba(255, 120, 120, 0.10); }
+.calPillIn  { border-color: rgba(140, 255, 180, 0.30); background: rgba(140, 255, 180, 0.10); }

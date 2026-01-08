@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { signInWithPassword } from "../lib/cloud";
+import { useCloud } from "../CloudProvider.jsx";
 import { Card, Button, Input, Banner } from "../ui";
 
 function friendlyAuthError(err) {
@@ -35,11 +36,22 @@ function friendlyAuthError(err) {
 
 export default function Login() {
   const nav = useNavigate();
+  const loc = useLocation();
+  const { session, authLoading } = useCloud();
+
+  // dove tornare dopo login (inviato da AuthGate)
+  const from = loc.state?.from || "/";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // ✅ se già loggato, non far vedere login: torna alla pagina richiesta
+  useEffect(() => {
+    if (authLoading) return;
+    if (session) nav(from, { replace: true });
+  }, [authLoading, session, from, nav]);
 
   async function submit(e) {
     e.preventDefault();
@@ -48,7 +60,8 @@ export default function Login() {
 
     try {
       await signInWithPassword(email.trim(), password);
-      nav("/", { replace: true });
+      // ✅ torna alla pagina richiesta (con querystring inclusa)
+      nav(from, { replace: true });
     } catch (e2) {
       setErr(friendlyAuthError(e2));
     } finally {
@@ -57,40 +70,42 @@ export default function Login() {
   }
 
   return (
-    <div style={{ maxWidth: 520, margin: "50px auto" }}>
-      <Card title="Accesso" subtitle="Login sicuro (Supabase Auth)">
-        <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
-          <Input
-            label="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="tuo@email.it"
-            disabled={loading}
-            autoComplete="email"
-            autoFocus
-          />
+    <div className="loginWrap">
+      <div className="loginCard">
+        <Card title="Accesso" subtitle="Login sicuro (Supabase Auth)">
+          <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
+            <Input
+              label="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="tuo@email.it"
+              disabled={loading || authLoading}
+              autoComplete="email"
+              autoFocus
+            />
 
-          <Input
-            label="Password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            disabled={loading}
-            autoComplete="current-password"
-          />
+            <Input
+              label="Password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              disabled={loading || authLoading}
+              autoComplete="current-password"
+            />
 
-          {err ? <Banner variant="danger">{err}</Banner> : null}
+            {err ? <Banner variant="danger">{err}</Banner> : null}
 
-          <Button type="submit" disabled={loading || !email || !password}>
-            {loading ? "Accesso..." : "Entra"}
-          </Button>
+            <Button type="submit" disabled={loading || authLoading || !email || !password}>
+              {loading ? "Accesso..." : "Entra"}
+            </Button>
 
-          <div style={{ opacity: 0.7, fontSize: 12 }}>
-            L’utente lo crei in Supabase → Authentication → Users.
-          </div>
-        </form>
-      </Card>
+            <div style={{ opacity: 0.7, fontSize: 12 }}>
+              L’utente lo crei in Supabase → Authentication → Users.
+            </div>
+          </form>
+        </Card>
+      </div>
     </div>
   );
 }

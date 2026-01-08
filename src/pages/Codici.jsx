@@ -1,13 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PropertyHeader from "../components/PropertyHeader";
-import {
-  loadBookings,
-  loadCodes,
-  saveCodes,
-  loadSelectedPropertyId,
-  loadProperties,
-} from "../lib/storage";
-import { getRole } from "../lib/auth";
+import { useCloud } from "../CloudProvider.jsx";
+import { supabase } from "../supabaseClient";
+import { loadCodes, saveCodes, loadBookings as loadBookingsLocal } from "../lib/storage";
 
 function generatePin() {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -34,7 +29,10 @@ function propertyBlockEN(p) {
   if (p?.address) lines.push(`Address: ${p.address}`);
   if (p?.checkInTime) lines.push(`Check-in time: ${p.checkInTime}`);
   if (p?.checkOutTime) lines.push(`Check-out time: ${p.checkOutTime}`);
-  if (p?.wifiName) lines.push(`Wi-Fi: ${p.wifiName}${p?.wifiPassword ? ` (Password: ${p.wifiPassword})` : ""}`);
+  if (p?.wifiName)
+    lines.push(
+      `Wi-Fi: ${p.wifiName}${p?.wifiPassword ? ` (Password: ${p.wifiPassword})` : ""}`
+    );
   if (p?.houseManualUrl) lines.push(`House guide: ${p.houseManualUrl}`);
   if (p?.notes) lines.push(`Notes: ${p.notes}`);
   if (!lines.length) return "";
@@ -46,7 +44,10 @@ function propertyBlockIT(p) {
   if (p?.address) lines.push(`Indirizzo: ${p.address}`);
   if (p?.checkInTime) lines.push(`Orario check-in: ${p.checkInTime}`);
   if (p?.checkOutTime) lines.push(`Orario check-out: ${p.checkOutTime}`);
-  if (p?.wifiName) lines.push(`Wi-Fi: ${p.wifiName}${p?.wifiPassword ? ` (Password: ${p.wifiPassword})` : ""}`);
+  if (p?.wifiName)
+    lines.push(
+      `Wi-Fi: ${p.wifiName}${p?.wifiPassword ? ` (Password: ${p.wifiPassword})` : ""}`
+    );
   if (p?.houseManualUrl) lines.push(`Guida casa: ${p.houseManualUrl}`);
   if (p?.notes) lines.push(`Note: ${p.notes}`);
   if (!lines.length) return "";
@@ -58,7 +59,10 @@ function propertyBlockFR(p) {
   if (p?.address) lines.push(`Adresse : ${p.address}`);
   if (p?.checkInTime) lines.push(`Heure d’arrivée (check-in) : ${p.checkInTime}`);
   if (p?.checkOutTime) lines.push(`Heure de départ (check-out) : ${p.checkOutTime}`);
-  if (p?.wifiName) lines.push(`Wi-Fi : ${p.wifiName}${p?.wifiPassword ? ` (Mot de passe : ${p.wifiPassword})` : ""}`);
+  if (p?.wifiName)
+    lines.push(
+      `Wi-Fi : ${p.wifiName}${p?.wifiPassword ? ` (Mot de passe : ${p.wifiPassword})` : ""}`
+    );
   if (p?.houseManualUrl) lines.push(`Guide du logement : ${p.houseManualUrl}`);
   if (p?.notes) lines.push(`Remarques : ${p.notes}`);
   if (!lines.length) return "";
@@ -70,7 +74,10 @@ function propertyBlockES(p) {
   if (p?.address) lines.push(`Dirección: ${p.address}`);
   if (p?.checkInTime) lines.push(`Hora de check-in: ${p.checkInTime}`);
   if (p?.checkOutTime) lines.push(`Hora de check-out: ${p.checkOutTime}`);
-  if (p?.wifiName) lines.push(`Wi-Fi: ${p.wifiName}${p?.wifiPassword ? ` (Contraseña: ${p.wifiPassword})` : ""}`);
+  if (p?.wifiName)
+    lines.push(
+      `Wi-Fi: ${p.wifiName}${p?.wifiPassword ? ` (Contraseña: ${p.wifiPassword})` : ""}`
+    );
   if (p?.houseManualUrl) lines.push(`Guía de la casa: ${p.houseManualUrl}`);
   if (p?.notes) lines.push(`Notas: ${p.notes}`);
   if (!lines.length) return "";
@@ -82,7 +89,10 @@ function propertyBlockDE(p) {
   if (p?.address) lines.push(`Adresse: ${p.address}`);
   if (p?.checkInTime) lines.push(`Check-in Zeit: ${p.checkInTime}`);
   if (p?.checkOutTime) lines.push(`Check-out Zeit: ${p.checkOutTime}`);
-  if (p?.wifiName) lines.push(`WLAN: ${p.wifiName}${p?.wifiPassword ? ` (Passwort: ${p.wifiPassword})` : ""}`);
+  if (p?.wifiName)
+    lines.push(
+      `WLAN: ${p.wifiName}${p?.wifiPassword ? ` (Passwort: ${p.wifiPassword})` : ""}`
+    );
   if (p?.houseManualUrl) lines.push(`Hausanleitung: ${p.houseManualUrl}`);
   if (p?.notes) lines.push(`Hinweise: ${p.notes}`);
   if (!lines.length) return "";
@@ -90,11 +100,16 @@ function propertyBlockDE(p) {
 }
 function propertyBlockByNat(nat, p) {
   switch (nat) {
-    case "IT": return propertyBlockIT(p);
-    case "FR": return propertyBlockFR(p);
-    case "ES": return propertyBlockES(p);
-    case "DE": return propertyBlockDE(p);
-    default: return propertyBlockEN(p);
+    case "IT":
+      return propertyBlockIT(p);
+    case "FR":
+      return propertyBlockFR(p);
+    case "ES":
+      return propertyBlockES(p);
+    case "DE":
+      return propertyBlockDE(p);
+    default:
+      return propertyBlockEN(p);
   }
 }
 
@@ -196,11 +211,16 @@ Mit freundlichen Grüßen`;
 }
 function messageByNat(nat, payload) {
   switch (nat) {
-    case "IT": return messageItalian(payload);
-    case "FR": return messageFrench(payload);
-    case "ES": return messageSpanish(payload);
-    case "DE": return messageGerman(payload);
-    default: return messageEnglish(payload);
+    case "IT":
+      return messageItalian(payload);
+    case "FR":
+      return messageFrench(payload);
+    case "ES":
+      return messageSpanish(payload);
+    case "DE":
+      return messageGerman(payload);
+    default:
+      return messageEnglish(payload);
   }
 }
 
@@ -262,28 +282,138 @@ function buildMailtoUrl(email, subject, body) {
   return `mailto:${encodeURIComponent(e)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
+function normalizeStatus(s) {
+  return String(s || "")
+    .toLowerCase()
+    .trim();
+}
+
+function isConfirmedStatus(s) {
+  const t = normalizeStatus(s);
+  return t === "confermata" || t === "confirmed" || t === "confirmée" || t === "confermato";
+}
+
+// prova a leggere i campi sia snake_case che camelCase
+function pick(row, keys, fallback = null) {
+  for (const k of keys) {
+    if (row && row[k] !== undefined && row[k] !== null) return row[k];
+  }
+  return fallback;
+}
+
+// mappa una riga supabase in “booking” usabile dalla UI
+function mapBookingRow(row) {
+  return {
+    id: pick(row, ["id"]),
+    propertyId: pick(row, ["propertyId", "property_id", "property"]),
+    guest: pick(row, ["guest", "guest_name", "cliente", "ospite"], ""),
+    channel: pick(row, ["channel", "source", "portale"], ""),
+    status: pick(row, ["status", "booking_status", "stato"], ""),
+    checkIn: pick(row, ["checkIn", "check_in", "start_date", "from"], ""),
+    checkOut: pick(row, ["checkOut", "check_out", "end_date", "to"], ""),
+    nationality: pick(row, ["nationality", "nat"], "EN"),
+    phone: pick(row, ["phone", "telefono"], ""),
+    email: pick(row, ["email"], ""),
+    preferredContact: pick(row, ["preferredContact", "preferred_contact"], "WhatsApp"),
+  };
+}
+
 export default function Codici() {
-  const role = getRole();
-  const isViewer = role !== "admin";
+  const { role, canManage, selectedId, selectedProperty, properties, user } = useCloud();
 
-  const selectedPropertyId = loadSelectedPropertyId();
-  const properties = loadProperties();
-  const property = properties.find((p) => p.id === selectedPropertyId) || properties[0];
+  const isViewer = !canManage;
+  const selectedPropertyId = selectedId;
 
-  const allBookings = loadBookings();
-  const bookings = useMemo(
-    () => allBookings.filter((b) => b.propertyId === selectedPropertyId),
-    [allBookings, selectedPropertyId]
-  );
+  const property =
+    selectedProperty ||
+    properties?.find((p) => String(p.id) === String(selectedPropertyId)) ||
+    properties?.[0] ||
+    null;
 
   const [codes, setCodes] = useState(loadCodes);
 
-  const confirmed = useMemo(() => bookings.filter((b) => b.status === "Confermata"), [bookings]);
+  const [bookings, setBookings] = useState([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [bookingsErr, setBookingsErr] = useState("");
 
-  const codesForProperty = useMemo(
-    () => codes.filter((c) => c.propertyId === selectedPropertyId),
-    [codes, selectedPropertyId]
-  );
+  // ✅ carica prenotazioni da Supabase (e fallback su localStorage)
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadBookingsCloud() {
+      setBookingsErr("");
+      if (!user?.id || !selectedPropertyId) {
+        setBookings([]);
+        return;
+      }
+
+      setBookingsLoading(true);
+      try {
+        // tentativo 1: colonne snake_case (più probabile)
+        let q = supabase
+          .from("bookings")
+          .select("*")
+          .eq("property_id", selectedPropertyId);
+
+        let { data, error } = await q;
+
+        // se property_id non esiste, proviamo propertyId
+        if (error && String(error.message || "").toLowerCase().includes("property_id")) {
+          const r2 = await supabase
+            .from("bookings")
+            .select("*")
+            .eq("propertyId", selectedPropertyId);
+          data = r2.data;
+          error = r2.error;
+        }
+
+        if (error) throw error;
+
+        const mapped = (data || []).map(mapBookingRow);
+
+        if (!mounted) return;
+
+        // se non arriva nulla da cloud, fallback localStorage (per dati “demo”)
+        if (mapped.length === 0) {
+          const local = Array.isArray(loadBookingsLocal()) ? loadBookingsLocal() : [];
+          const filteredLocal = local.filter(
+            (b) => String(b.propertyId) === String(selectedPropertyId) || String(b.property_id) === String(selectedPropertyId)
+          );
+          setBookings(filteredLocal);
+        } else {
+          setBookings(mapped);
+        }
+      } catch (e) {
+        if (!mounted) return;
+
+        // fallback localStorage e mostro errore (utile per RLS o tabella diversa)
+        const local = Array.isArray(loadBookingsLocal()) ? loadBookingsLocal() : [];
+        const filteredLocal = local.filter(
+          (b) => String(b.propertyId) === String(selectedPropertyId) || String(b.property_id) === String(selectedPropertyId)
+        );
+        setBookings(filteredLocal);
+
+        setBookingsErr(e?.message || "Errore caricamento prenotazioni (cloud).");
+        console.error("Codici bookings load error:", e);
+      } finally {
+        if (mounted) setBookingsLoading(false);
+      }
+    }
+
+    loadBookingsCloud();
+    return () => {
+      mounted = false;
+    };
+  }, [user?.id, selectedPropertyId]);
+
+  const confirmed = useMemo(() => {
+    return (bookings || []).filter((b) => isConfirmedStatus(b.status));
+  }, [bookings]);
+
+  const codesForProperty = useMemo(() => {
+    if (!selectedPropertyId) return [];
+    return (codes || []).filter((c) => String(c.propertyId) === String(selectedPropertyId));
+  }, [codes, selectedPropertyId]);
 
   const codeByBookingId = useMemo(() => {
     const m = new Map();
@@ -293,6 +423,7 @@ export default function Codici() {
 
   function upsertCodeForBooking(b, { forceRegenerate = false } = {}) {
     if (isViewer) return alert("Sei in modalità VIEWER: non puoi creare o modificare PIN.");
+
     const existing = codeByBookingId.get(b.id);
     if (existing && !forceRegenerate) return;
 
@@ -327,7 +458,7 @@ export default function Codici() {
 
   function removeCodeByBookingId(bookingId) {
     if (isViewer) return alert("Sei in modalità VIEWER: non puoi eliminare PIN.");
-    const next = codes.filter((c) => !(c.propertyId === selectedPropertyId && c.bookingId === bookingId));
+    const next = codes.filter((c) => !(String(c.propertyId) === String(selectedPropertyId) && c.bookingId === bookingId));
     setCodes(next);
     saveCodes(next);
   }
@@ -343,7 +474,6 @@ export default function Codici() {
     });
   }
 
-  // ✅ Chicca: banner rosso contatto incompleto
   function contactIssues(b) {
     const pref = (b.preferredContact || "WhatsApp").toLowerCase();
     const phoneOk = !!normalizePhoneForWhatsApp(b.phone, b.nationality || "EN");
@@ -353,17 +483,14 @@ export default function Codici() {
     if (!phoneOk) issues.push("WhatsApp (telefono mancante o non valido)");
     if (!emailOk) issues.push("Email (mancante o non valida)");
 
-    // se preferenza è WhatsApp e manca telefono -> grave; idem Email
-    const preferredMissing =
-      (pref === "whatsapp" && !phoneOk) || (pref === "email" && !emailOk);
+    const preferredMissing = (pref === "whatsapp" && !phoneOk) || (pref === "email" && !emailOk);
 
     return { issues, preferredMissing, phoneOk, emailOk };
   }
 
-  // warning intelligente sulla data (es: invio troppo presto/tardi)
   function dateWarnings(b) {
     const today = new Date().toISOString().slice(0, 10);
-    const d = daysDiff(today, b.checkIn); // giorni a check-in
+    const d = daysDiff(today, b.checkIn);
     if (d === null) return [];
     const warns = [];
     if (d > 14) warns.push("Check-in oltre 14 giorni: forse è presto per inviare il PIN.");
@@ -375,10 +502,10 @@ export default function Codici() {
     const aptName = property?.name || selectedPropertyId;
     return window.confirm(
       `Confermi invio?\n\n` +
-      `Appartamento: ${aptName}\n` +
-      `Ospite: ${b.guest}\n` +
-      `Metodo: ${method}\n\n` +
-      `OK = invia • Annulla = stop`
+        `Appartamento: ${aptName}\n` +
+        `Ospite: ${b.guest}\n` +
+        `Metodo: ${method}\n\n` +
+        `OK = invia • Annulla = stop`
     );
   }
 
@@ -411,10 +538,38 @@ export default function Codici() {
     return openWhatsApp(b, pin);
   }
 
+  if (!selectedPropertyId) {
+    return (
+      <div style={{ display: "grid", gap: 16 }}>
+        <div style={card}>
+          <PropertyHeader title="Codici serratura" />
+          <div style={{ opacity: 0.8, marginTop: 10 }}>
+            Seleziona un appartamento dalla sidebar.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: "grid", gap: 16 }}>
       <div style={card}>
         <PropertyHeader title="Codici serratura" />
+
+        <div style={{ opacity: 0.7, marginTop: 6, fontSize: 12 }}>
+          Ruolo: <b>{role}</b> • Permessi: <b>{canManage ? "admin" : "viewer"}</b>
+          {" • "}
+          Prenotazioni caricate: <b>{bookings?.length || 0}</b>
+          {" • "}
+          Confermate: <b>{confirmed.length}</b>
+          {bookingsLoading ? <span> • Caricamento...</span> : null}
+        </div>
+
+        {bookingsErr ? (
+          <div style={warnBanner}>
+            <b>Nota:</b> {bookingsErr} (uso fallback localStorage se presente)
+          </div>
+        ) : null}
 
         {isViewer ? (
           <div style={infoBanner}>
@@ -423,7 +578,13 @@ export default function Codici() {
         ) : null}
 
         {confirmed.length === 0 ? (
-          <div style={{ opacity: 0.8, marginTop: 10 }}>Nessuna prenotazione “Confermata” per questo appartamento.</div>
+          <div style={{ opacity: 0.8, marginTop: 10 }}>
+            Nessuna prenotazione “Confermata” per questo appartamento.
+            <div style={{ opacity: 0.65, marginTop: 6, fontSize: 12 }}>
+              Se la prenotazione è “Confermata” ma qui non compare, quasi sempre è perché in DB lo stato non è
+              esattamente “Confermata” (es. “confermata”, “Confirmed”, ecc.) oppure la prenotazione è su un property_id diverso.
+            </div>
+          </div>
         ) : (
           <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
             {confirmed.map((b) => {
@@ -442,17 +603,16 @@ export default function Codici() {
                       {b.checkIn} → {b.checkOut}
                     </div>
                     <div style={{ opacity: 0.8, marginTop: 6 }}>
-                      📞 {b.phone || "-"} • ✉️ {b.email || "-"} • Preferenza: {b.preferredContact || "WhatsApp"}
+                      📞 {b.phone || "-"} • ✉️ {b.email || "-"} • Preferenza:{" "}
+                      {b.preferredContact || "WhatsApp"}
                     </div>
 
-                    {/* ✅ Banner rosso contatto incompleto */}
                     {issues.issues.length > 0 ? (
                       <div style={issues.preferredMissing ? dangerBanner : warnBanner}>
                         <b>Contatto incompleto:</b> {issues.issues.join(" • ")}
                       </div>
                     ) : null}
 
-                    {/* Warning data */}
                     {warns.length > 0 ? (
                       <div style={warnBanner}>
                         <b>Attenzione:</b> {warns.join(" ")}
@@ -487,7 +647,10 @@ export default function Codici() {
                         Copia PIN
                       </button>
 
-                      <button style={ghostBtn} onClick={() => copy(buildMessageForBooking(b, existing.pin))}>
+                      <button
+                        style={ghostBtn}
+                        onClick={() => copy(buildMessageForBooking(b, existing.pin))}
+                      >
                         Copia messaggio
                       </button>
 

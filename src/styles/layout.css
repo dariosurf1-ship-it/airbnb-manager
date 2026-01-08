@@ -1,0 +1,108 @@
+.app-shell{
+  display:flex;
+  min-height: 100vh;
+}
+
+.sidebar{
+  width: 290px;
+  padding: 16px;
+  border-right: 1px solid rgba(255,255,255,.08);
+  background: rgba(0,0,0,.10);
+}
+
+.sidebar-brand{
+  padding: 14px 14px 12px 14px;
+  border-radius: var(--radius2);
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.08);
+  margin-bottom: 14px;
+}
+.brand-title{ font-weight: 900; font-size: 16px; }
+.brand-subtitle{ color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+.sidebar-section{ margin-top: 14px; }
+.sidebar-section-title{
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.55);
+  margin: 10px 6px;
+}
+
+.property-list{ display:flex; flex-direction:column; gap:10px; }
+.property-item{
+  text-align:left;
+  padding: 12px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.09);
+  background: rgba(255,255,255,.04);
+  cursor:pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+.property-item:hover{ background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.16); }
+.property-item.active{
+  background: rgba(59,130,246,.20);
+  border-color: rgba(59,130,246,.35);
+}
+.property-name{ font-weight: 800; }
+.property-meta{ color: rgba(255,255,255,.60); font-size: 12px; margin-top: 3px; }
+
+.nav{ display:flex; flex-direction:column; gap:8px; }
+.nav-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding: 11px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.03);
+}
+.nav-item:hover{ background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.14); }
+.nav-item.active{
+  background: rgba(34,197,94,.16);
+  border-color: rgba(34,197,94,.30);
+}
+
+.sidebar-footer{
+  margin-top: auto;
+  padding: 14px 8px 4px 8px;
+}
+
+.app-main{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  min-width: 0;
+}
+
+.topbar{
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  background: rgba(0,0,0,.18);
+  backdrop-filter: blur(12px);
+}
+
+.topbar-right{ display:flex; gap:10px; flex-wrap: wrap; }
+
+.app-content{
+  padding: 18px;
+  max-width: 1200px;
+  width: 100%;
+}
+
+.content-header{
+  margin-bottom: 14px;
+  display:flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.page{ min-height: 100vh; padding: 24px; }
+.page-center{ display:flex; justify-content:center; align-items:center; }
